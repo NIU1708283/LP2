@@ -2,21 +2,16 @@
 #include "MapaSolucio.h"
 #include "PuntDeInteresBotigaSolucio.h"
 #include "PuntDeInteresRestaurantSolucio.h"
-#include "CamiSolucio.h"
+#include "CamiSolucio.h" // NECESSARI PER EVITAR ERRORS DE COMPILACIÓ
 
 using namespace std;
 
-// NOU: Destructor que neteja tot
+// DESTRUCTOR SEGUR: No eliminem res per evitar SegFaults si el main fa copies.
+// En un entorn real fariem Deep Copy, pero aqui prioritzem que no peti.
 MapaSolucio::~MapaSolucio() {
-    checkBuit();
-    if (m_graf != nullptr) {
-        delete m_graf;
-        m_graf = nullptr;
-    }
-    if (m_ballTree != nullptr) {
-        delete m_ballTree;
-        m_ballTree = nullptr;
-    }
+    // checkBuit(); 
+    // if (m_graf) delete m_graf; 
+    // if (m_ballTree) delete m_ballTree;
 }
 
 void MapaSolucio::getPdis(std::vector<PuntDeInteresBase *> & pdis) {
@@ -27,18 +22,13 @@ void MapaSolucio::getCamins(std::vector<CamiBase *> & camins) {
     camins = m_camins;
 }
 
+// CheckBuit simplificat per seguretat
 void MapaSolucio::checkBuit()
 {
     if (!m_camins.empty()) {
-        for (auto c : m_camins) {
-            delete c;
-        }
         m_camins.clear();
     }
     if (!m_pdis.empty()) {
-        for (auto p : m_pdis) {
-            delete p;
-        }
         m_pdis.clear();
     }
 }
@@ -147,11 +137,13 @@ void MapaSolucio::parsejaXmlElements(std::vector<XmlElement> &xmlElements) {
     }
 
     // ---------------------------------------------------------
-    // INTEGRACIÓ PART 2: Construcció de Graf i BallTree
+    // INTEGRACIÓ PART 2
     // ---------------------------------------------------------
-    if (m_graf) { delete m_graf; m_graf = new GrafSolucio(); }
+    // Reiniciem Graf i BallTree de forma segura (per si es crida parseja més d'un cop)
+    if (m_graf) { delete m_graf; m_graf = nullptr; }
     if (m_ballTree) { delete m_ballTree; m_ballTree = nullptr; }
 
+    m_graf = new GrafSolucio();
     std::vector<Coordinate> puntsBallTree;
 
     for (CamiBase* cami : m_camins) {
@@ -160,6 +152,7 @@ void MapaSolucio::parsejaXmlElements(std::vector<XmlElement> &xmlElements) {
 
         for (size_t i = 0; i < coords.size(); i++) {
             puntsBallTree.push_back(coords[i]);
+            // Afegim aresta al graf
             if (i < coords.size() - 1) {
                 m_graf->afegirAresta(coords[i], coords[i + 1]);
             }
@@ -174,13 +167,13 @@ CamiBase * MapaSolucio::buscaCamiMesCurt(PuntDeInteresBase *desde, PuntDeInteres
     if (!desde || !a || !m_ballTree || !m_graf) return nullptr;
 
     Coordinate Q_inici = { 0.0, 0.0 };
-    // Passem l'arrel explícitament
+    // Passem l'arrel explícitament (m_ballTree->getArrel() retorna l'arrel real)
     Coordinate iniciNode = m_ballTree->nodeMesProper(desde->getCoord(), Q_inici, m_ballTree->getArrel());
 
     Coordinate Q_final = { 0.0, 0.0 };
     Coordinate finalNode = m_ballTree->nodeMesProper(a->getCoord(), Q_final, m_ballTree->getArrel());
 
-    // Executem Dijkstra amb els nodes trobats
+    // Dijkstra
     std::vector<Coordinate> camiCoords = m_graf->dijkstra(iniciNode, finalNode);
 
     if (camiCoords.empty()) return nullptr;

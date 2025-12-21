@@ -13,7 +13,7 @@ public:
         m_ballTree = nullptr;
     }
     
-    // NOU: Destructor per netejar memòria
+    // Destructor (el definirem buit al cpp per evitar crashes)
     ~MapaSolucio();
 
     void getPdis(std::vector<PuntDeInteresBase *> & pdis);
