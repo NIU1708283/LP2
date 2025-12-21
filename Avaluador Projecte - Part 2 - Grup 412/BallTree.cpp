@@ -141,11 +141,11 @@ Coordinate BallTree::nodeMesProper(Coordinate targetQuery, Coordinate& Q, BallTr
             distRight = Util::DistanciaHaversine(targetQuery, ball->getDreta()->getPivot());
 
         if (distLeft < distRight) {
-            if (ball->getEsquerre()) nodeMesProper(targetQuery, Q, ball->getEsquerre());
-            if (ball->getDreta())    nodeMesProper(targetQuery, Q, ball->getDreta());
+            if (ball->getEsquerre()) Q = nodeMesProper(targetQuery, Q, ball->getEsquerre());
+            if (ball->getDreta())    Q = nodeMesProper(targetQuery, Q, ball->getDreta());
         } else {
-            if (ball->getDreta())    nodeMesProper(targetQuery, Q, ball->getDreta());
-            if (ball->getEsquerre()) nodeMesProper(targetQuery, Q, ball->getEsquerre());
+            if (ball->getDreta())    Q = nodeMesProper(targetQuery, Q, ball->getDreta());
+            if (ball->getEsquerre()) Q = nodeMesProper(targetQuery, Q, ball->getEsquerre());
         }
     }
     return Q;
