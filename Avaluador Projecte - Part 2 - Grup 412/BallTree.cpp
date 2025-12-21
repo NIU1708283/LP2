@@ -95,6 +95,12 @@ void BallTree::postOrdre(std::vector<std::list<Coordinate>>& out) {
 Coordinate BallTree::nodeMesProper(Coordinate targetQuery, Coordinate& Q, BallTree* ball) {
     if (!ball) return Q;
 
+    // Inicialitzar Q si és la raíz (Q inicial és 0,0)
+    if (ball->getArrel() == nullptr) {
+        Q.lat = 0;
+        Q.lon = 0;
+    }
+
     // Si hem trobat exactament el punt, retornem
     if (targetQuery.lat == Q.lat && targetQuery.lon == Q.lon) return Q;
 
@@ -102,15 +108,10 @@ Coordinate BallTree::nodeMesProper(Coordinate targetQuery, Coordinate& Q, BallTr
     double D1 = Util::DistanciaHaversine(targetQuery, ball->getPivot());
 
     // PAS 2: Distància de Q al Pivot (Lògica Grup 431)
-    // Si Q és (0,0), assumim distància infinita
-    double D2 = DBL_MAX;
-    if (Q.lat != 0 || Q.lon != 0) {
-        D2 = Util::DistanciaHaversine(Q, ball->getPivot());
-    }
+    double D2 = Util::DistanciaHaversine(Q, ball->getPivot());
 
     // PAS 3: Condició de Poda del Grup 431
     // Es compara (D1 - Radi) >= D2.
-    // Nota: El grup 431 fa servir D2 (Distancia Q-Pivot) en lloc de Distancia Target-Q.
     if ((D1 - ball->getRadi()) >= D2) {
         return Q;
     }
@@ -119,12 +120,7 @@ Coordinate BallTree::nodeMesProper(Coordinate targetQuery, Coordinate& Q, BallTr
     if (!ball->getEsquerre() && !ball->getDreta()) {
         for (const auto& punt : ball->getCoordenades()) {
             double distTargetPunt = Util::DistanciaHaversine(targetQuery, punt);
-            
-            // Calculem distància actual del millor candidat Q al Target
-            double distTargetQ = DBL_MAX;
-            if (Q.lat != 0 || Q.lon != 0) {
-                distTargetQ = Util::DistanciaHaversine(targetQuery, Q);
-            }
+            double distTargetQ = Util::DistanciaHaversine(targetQuery, Q);
 
             if (distTargetPunt < distTargetQ) {
                 Q = punt;
@@ -141,11 +137,11 @@ Coordinate BallTree::nodeMesProper(Coordinate targetQuery, Coordinate& Q, BallTr
             distRight = Util::DistanciaHaversine(targetQuery, ball->getDreta()->getPivot());
 
         if (distLeft < distRight) {
-            if (ball->getEsquerre()) Q = nodeMesProper(targetQuery, Q, ball->getEsquerre());
-            if (ball->getDreta())    Q = nodeMesProper(targetQuery, Q, ball->getDreta());
+            if (ball->getEsquerre()) nodeMesProper(targetQuery, Q, ball->getEsquerre());
+            if (ball->getDreta())    nodeMesProper(targetQuery, Q, ball->getDreta());
         } else {
-            if (ball->getDreta())    Q = nodeMesProper(targetQuery, Q, ball->getDreta());
-            if (ball->getEsquerre()) Q = nodeMesProper(targetQuery, Q, ball->getEsquerre());
+            if (ball->getDreta())    nodeMesProper(targetQuery, Q, ball->getDreta());
+            if (ball->getEsquerre()) nodeMesProper(targetQuery, Q, ball->getEsquerre());
         }
     }
     return Q;
