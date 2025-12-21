@@ -1,7 +1,9 @@
 #pragma once
+
 #include <string>
 #include "Common.h"
 #include "PuntDeInteresBase.h"
+#include "pch.h" // Caronte
 
 using namespace std;
 
@@ -42,6 +44,9 @@ private:
     string m_wheelchair;    // Accessibilitat
 };
 
-// ---------------------------------------------------------------------------
-// Fitxer modificat per Arnau Baeza (NIU 1708086) i Felipe Tenorio da Silva
-// ---------------------------------------------------------------------------
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

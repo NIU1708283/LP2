@@ -1,28 +1,33 @@
-//#include "pch.h"
 #include "PuntDeInteresRestaurantSolucio.h"
 #include <string>
+#include "pch.h" // Caronte
 
 using namespace std;
 
-// Retorna el color del restaurant segons el tipus i accessibilitat
+
+// calcula el color segun tipo de cocina y accesibilidad
 unsigned int PuntDeInteresRestaurantSolucio::getColor()
 {
-    // Restaurants de pizza accessibles → color verd clar
-    if (m_tipusCuisine == "pizza" && m_wheelchair == "yes")
-        return 0x7FFFD4;
+	// pizza y accesible
+	if (m_tipusCuisine == "pizza" && m_wheelchair == "yes")
+		return 0x7FFFD4;
 
-    // Restaurants xinesos → color cian
-    if (m_tipusCuisine == "chinese")
-        return 0x00FFFF;
+	// chinoooo
+	if (m_tipusCuisine == "chinese")
+		return 0x00FFFF;
 
-    // Qualsevol altre restaurant amb accessibilitat → violeta fosc
-    if (m_wheelchair == "yes" && !m_tipusCuisine.empty())
-        return 0x5D3FD3;
+	// accesible con tipo definido
+	if (m_wheelchair == "yes" && !m_tipusCuisine.empty())
+		return 0x5D3FD3;
 
-    // Per defecte (color base dels punts d’interès)
-    return PuntDeInteresBase::getColor(); // Esperat: 0xFFA500
+	// por defecto
+	return PuntDeInteresBase::getColor();
 }
 
-// ---------------------------------------------------------------------------
-// Fitxer implementat per Arnau Baeza (NIU 1708086) i Felipe Tenorio da Silva
-// ---------------------------------------------------------------------------
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

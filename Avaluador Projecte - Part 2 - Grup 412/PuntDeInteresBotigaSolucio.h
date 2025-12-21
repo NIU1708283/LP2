@@ -1,59 +1,73 @@
 #pragma once
+
 #include "PuntDeInteresBase.h"
 #include <string>
+#include "pch.h" // Caronte
 
 using namespace std;
 
-// Classe que representa una botiga amb informació addicional
+
+// pdi de tipo botiga
 class PuntDeInteresBotigaSolucio : public PuntDeInteresBase
 {
 public:
-    // Constructors
-    PuntDeInteresBotigaSolucio()
-        : m_tagBotiga(""), m_openingHours(""), m_wheelchair("") {}
+	// constructor base
+	PuntDeInteresBotigaSolucio() {
+		m_tagBotiga = "";
+		m_openingHours = "";
+		m_wheelchair = "";
+	}
 
-    // Constructor còpia
-    PuntDeInteresBotigaSolucio(const PuntDeInteresBotigaSolucio& p)
-        : PuntDeInteresBase(static_cast<const PuntDeInteresBase&>(p)),
-          m_tagBotiga(p.m_tagBotiga),
-          m_openingHours(p.m_openingHours),
-          m_wheelchair(p.m_wheelchair) {}
+	// constructor copia
+	PuntDeInteresBotigaSolucio(const PuntDeInteresBotigaSolucio& p)
+		: PuntDeInteresBase(p) {
+		m_tagBotiga = p.m_tagBotiga;
+		m_openingHours = p.m_openingHours;
+		m_wheelchair = p.m_wheelchair;
+	}
 
-    // Constructor amb paràmetres
-    PuntDeInteresBotigaSolucio(Coordinate c, const string& nom,
-                               const string& tag,
-                               const string& openingHours,
-                               const string& wheelchair)
-        : PuntDeInteresBase(c, nom),
-          m_tagBotiga(tag),
-          m_openingHours(openingHours),
-          m_wheelchair(wheelchair) {}
+	// constructor con datos
+	PuntDeInteresBotigaSolucio(Coordinate c,
+							   const string& nom,
+							   const string& tag,
+							   const string& openingHours,
+							   const string& wheelchair)
+		: PuntDeInteresBase(c, nom) {
+		m_tagBotiga = tag;
+		m_openingHours = openingHours;
+		m_wheelchair = wheelchair;
+	}
 
-    // Getters
-    string getTag() const { return m_tagBotiga; }
-    string getOpeningHours() const { return m_openingHours; }
-    string getWheelchair() const { return m_wheelchair; }
+	// getters rapidos
+	string getTag() const { return m_tagBotiga; }
+	string getOpeningHours() const { return m_openingHours; }
+	string getWheelchair() const { return m_wheelchair; }
 
-    // Retorna el color segons el tipus de botiga
-    unsigned int getColor() override;
+	// calcula el color segun la botiga
+	unsigned int getColor();
 
-    // Setters
-    void setTag(const string& tag) { m_tagBotiga = tag; }
-    void setHours(const string& hours) { m_openingHours = hours; }
-    void setWheel(const string& wheels) { m_wheelchair = wheels; }
-    void setGeneral(const string& tag, const string& hours, const string& wheels)
-    {
-        m_tagBotiga = tag;
-        m_openingHours = hours;
-        m_wheelchair = wheels;
-    }
+	// setters
+	void setTag(const string& tag) { m_tagBotiga = tag; }
+	void setHours(const string& hours) { m_openingHours = hours; }
+	void setWheel(const string& wheels) { m_wheelchair = wheels; }
+	void setGeneral(const string& tag,
+					const string& hours,
+					const string& wheels) {
+		m_tagBotiga = tag;
+		m_openingHours = hours;
+		m_wheelchair = wheels;
+	}
 
 private:
-    string m_tagBotiga;     // Tipus de botiga (supermarket, tobacco, bakery...)
-    string m_openingHours;  // Horari d'obertura
-    string m_wheelchair;    // Accessibilitat ("yes"/"no")
+	string m_tagBotiga;      // tipo de botiga
+	string m_openingHours;   // horario
+	string m_wheelchair;     // accesibilidad
 };
 
-// ---------------------------------------------------------------------------
-// Fitxer modificat per Arnau Baeza (NIU 1708086) i Felipe Tenorio da Silva
-// ---------------------------------------------------------------------------
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

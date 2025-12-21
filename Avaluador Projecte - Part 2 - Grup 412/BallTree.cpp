@@ -1,193 +1,208 @@
 #include "BallTree.h"
-#include <limits> //per utilitzar DBL_MAX
-#include <stack> // per utilitzar la pila de la funció nodeMesProper
+#include <limits>
 #include <cfloat>
+#include <stack>
+#include "pch.h" // Caronte
 
-//Q és la coordenada del arbre del qual és la distància més curta respecte pdi.
+using namespace std;
+
+
+// busca el nodo mas cercano a pdi usando el ball tree
 Coordinate BallTree::nodeMesProper(Coordinate pdi, Coordinate& Q, BallTree* ball)
 {
-    if (pdi.lon == Q.lon && pdi.lat == Q.lat) // si es el valor que busquem ja esta
-        return Q;
+	// si ya coincide, no hay nada que buscar
+	if (pdi.lat == Q.lat && pdi.lon == Q.lon)
+		return Q;
 
-    if (ball->getArrel() == nullptr) // si el node no té pare les cordenadas seran 0.0 (forçar que l'algorisme actualitzi)
-    {
-        Q.lat = 0;
-        Q.lon = 0;
-    }
+	// si no hay raiz real, forzamos actualizacion
+	if (ball->getArrel() == nullptr) {
+		Q = Coordinate{ 0.0, 0.0 };
+	}
 
-    //PAS 1
-    float D1 = Util::DistanciaHaversine(pdi, ball->m_pivot); // calculem la distancia entre el pdi y el pivot
-    //PAS 2
-    float D2 = Util::DistanciaHaversine(Q, ball->m_pivot); // calculem la distancia entre Q y el pivot
-    //PAS 3
-    if ((D1 - ball->m_radi) >= D2)  //Si D1 – bola.radi >= D2,retorna Q
-        return Q;
-    else
-    {
-        //PAS 4
-        if (ball->m_left == nullptr && ball->m_right == nullptr) // Si la bola és una fulla de l’arbre = No te fills
-        {
-            // actualitza Q si és el node camí més proper al punt d’interès, dels punts que formen la bola
-            for (auto it = m_coordenades.begin(); it != m_coordenades.end(); it++) // per a cada coordenada
-            {
-                if (Util::DistanciaHaversine(pdi, *it) < Util::DistanciaHaversine(pdi, Q)) // Si el node acutal esta més a prop de pid que Q, actualitzem el node Q
-                {
-                    Q.lat = (*it).lat;
-                    Q.lon = (*it).lon;
-                }
-            }
-        }
-        else
-        {
-            //PAS 5
-            float Da = DBL_MAX;
-            float Db = DBL_MAX;
-            //Calculem les distàncies del pdi(Punt d'interès) respecte el pivot per les pilotes fills. (Pel fill o fills que tingui)
-            if (ball->m_right != nullptr) //Si té fill dret calculem la distància
-                Db = Util::DistanciaHaversine(pdi, ball->m_right->m_pivot);
-            if (ball->m_left != nullptr) //Si té fill esquerra calculem la distància
-                Da = Util::DistanciaHaversine(pdi, ball->m_left->m_pivot);
+	// distancia del punto al pivot actual
+	float d_pivot = Util::DistanciaHaversine(pdi, ball->m_pivot);
 
-            if (Da < Db) //Si Da < Db, comença la cerca per la pilota esquerra, i després, la dreta
-            {
-                if (ball->m_left != nullptr)
-                    nodeMesProper(pdi, Q, ball->m_left); // si el node té fill esquerra, trucada recursiva
-                if (ball->m_right != nullptr)
-                    nodeMesProper(pdi, Q, ball->m_right); // si el nodo tiene hijo derecho, trucada recursiva
-            }
-            else //Si Da > Db, comença la cerca per la pilota dreta, i després, la esquerra (Mirar si hi ha alguna Q més propera)
-            {
-                if (ball->m_right != nullptr)
-                    nodeMesProper(pdi, Q, ball->m_right);
-                if (ball->m_left != nullptr)
-                    nodeMesProper(pdi, Q, ball->m_left);
-            }
-        }
-        return Q;
-    }
+	// distancia del mejor candidato actual
+	float d_q = Util::DistanciaHaversine(Q, ball->m_pivot);
+
+	// poda: no puede haber mejor solucion dentro de esta bola
+	if ((d_pivot - ball->m_radi) >= d_q)
+		return Q;
+
+	// si es hoja, comprobamos todas las coordenadas
+	if (ball->m_left == nullptr && ball->m_right == nullptr) {
+		for (auto& c : m_coordenades) {
+			if (Util::DistanciaHaversine(pdi, c) < Util::DistanciaHaversine(pdi, Q)) {
+				Q = c;
+			}
+		}
+	}
+	else {
+		// decidimos por donde bajar primero
+		float da = DBL_MAX;
+		float db = DBL_MAX;
+
+		if (ball->m_left != nullptr)
+			da = Util::DistanciaHaversine(pdi, ball->m_left->m_pivot);
+		if (ball->m_right != nullptr)
+			db = Util::DistanciaHaversine(pdi, ball->m_right->m_pivot);
+
+		// exploramos primero el lado mas prometedor
+		if (da < db) {
+			if (ball->m_left != nullptr)
+				nodeMesProper(pdi, Q, ball->m_left);
+			if (ball->m_right != nullptr)
+				nodeMesProper(pdi, Q, ball->m_right);
+		}
+		else {
+			if (ball->m_right != nullptr)
+				nodeMesProper(pdi, Q, ball->m_right);
+			if (ball->m_left != nullptr)
+				nodeMesProper(pdi, Q, ball->m_left);
+		}
+	}
+
+	// dev //
+	return Q;
 }
 
+// Somos jardineros con tanta poda
+
+
+// construye el arbol de forma recursiva
 void BallTree::construirArbre(const vector<Coordinate>& coordenades)
 {
-    m_coordenades = coordenades;
-    m_pivot = Util::calcularPuntCentral(m_coordenades);  //Buscamos el pivote central
-    vector<float> distanciesC;
-    size_t posPuntMesLlunyC = 0;
-   
-    if (m_coordenades.size() > 1) //Si la bola només té una cordenada, fi = Condició de parada
-    {
-        //CALCULEM EL RADI/CORDENADA MÉS ALLUNYADA
-        for (size_t i = 0; i < m_coordenades.size(); i++) // per la cada coordenada
-        {
-            distanciesC.push_back(Util::DistanciaHaversine(m_pivot, m_coordenades[i])); //Guardem en el vector la distància de cada cordenada al pivot
-            if (distanciesC[posPuntMesLlunyC] < distanciesC[i])                         //Si la distància actual es més gran que la que guardem actualment, canviem
-                posPuntMesLlunyC = i; // guardem la posició de la coordenada més allunyada
-        }
-        m_radi = distanciesC[posPuntMesLlunyC]; //El radi és la distància al punt més allunyat
+	m_coordenades = coordenades;
+	m_pivot = Util::calcularPuntCentral(m_coordenades);
 
-        //BUSQUEM EL PUNT MÉS ALLUNYAT DEL PUNT MÉS LLUNYÀ
-        Coordinate puntA;
-        puntA.lat = m_coordenades[posPuntMesLlunyC].lat;
-        puntA.lon = m_coordenades[posPuntMesLlunyC].lon;
-        Coordinate puntB;   //Punt "Auxiliar" amb el que recorrerem tot el vector buscant el més allunyat (referencia inicial)
-        puntB.lat = m_coordenades[0].lat;
-        puntB.lon = m_coordenades[0].lon;
-        Coordinate aux;
-		for (size_t i = 1; i < m_coordenades.size(); i++) // per cada coordenada
-        {
-            aux.lat = m_coordenades[i].lat;
-            aux.lon = m_coordenades[i].lon;
-            if (Util::DistanciaHaversine(puntB, puntA) < Util::DistanciaHaversine(aux, puntA)) //Si es troba un punt aux que estigui més allunyat que el puntB actual, actualitzem puntB
-            {
-                puntB.lon = aux.lon;
-                puntB.lat = aux.lat;
-            }
-        }
+	// caso base: una sola coordenada
+	if (m_coordenades.size() <= 1) {
+		m_left = nullptr;
+		m_right = nullptr;
+		m_radi = 0;
+		return;
+	}
+	
+	//if (m_coordenades.size() <= 1) {
+	//	m_left = NULL;
+	//	m_right = NULL;
+	//	m_radi = 0.1;
+	//	return;
+	//} / Esto no va felipe :(
 
-        //DIVIDIR LES CORDENADAS/NODES MÉS PROPERS A CADA FILL EN DOS VECTORS 
-		vector<Coordinate> coordenadesA, coordenadesB; 
-		for (size_t i = 0; i < m_coordenades.size(); i++) // per cada cordenada
-        {
-            if (Util::DistanciaHaversine(m_coordenades[i], puntA) < Util::DistanciaHaversine(m_coordenades[i], puntB)) //Si esta més a prop del puntA l'afegim al seu vector
-                coordenadesA.push_back(m_coordenades[i]);
-            else                                             //Si no, se l'afegim al puntB
-                coordenadesB.push_back(m_coordenades[i]);
-        }
+	// calculamos el radio (punto mas lejano al pivot)
+	vector<float> distancies;
+	size_t idx_llunya = 0;
 
-        //Fem els dos arbres fill
-        BallTree* fillDret = new BallTree;
-        BallTree* fillEsquerre = new BallTree;
-        //Els assignem com arrel/pare el arbre actual
-        fillDret->m_root = this;
-        fillEsquerre->m_root = this;
-        //A l'arbre actual li assignem els seus fills
-        m_left = fillEsquerre;
-        m_right = fillDret;
-        //De manera recursiva construim l'arbre amb cada un del seus fills, cada un amb els punts que tenen més a prop
-        fillDret->construirArbre(coordenadesB);
-        fillEsquerre->construirArbre(coordenadesA); 
-    }
-    else 
-    { //Si només hi ha una cordenada...
-        m_left = nullptr;
-        m_right = nullptr;
-        m_radi = 0;
-    }
+	for (size_t i = 0; i < m_coordenades.size(); i++) {
+		distancies.push_back(Util::DistanciaHaversine(m_pivot, m_coordenades[i]));
+		if (distancies[i] > distancies[idx_llunya])
+			idx_llunya = i;
+	}
+
+	m_radi = distancies[idx_llunya];
+
+	// punto mas alejado del mas lejano
+	Coordinate puntA = m_coordenades[idx_llunya];
+	Coordinate puntB = m_coordenades[0];
+
+	for (size_t i = 1; i < m_coordenades.size(); i++) {
+		if (Util::DistanciaHaversine(puntB, puntA) <
+			Util::DistanciaHaversine(m_coordenades[i], puntA)) {
+			puntB = m_coordenades[i];
+		}
+	}
+
+	// separamos las coordenadas en dos grupos
+	vector<Coordinate> coordsA, coordsB;
+	for (auto& c : m_coordenades) {
+		if (Util::DistanciaHaversine(c, puntA) <
+			Util::DistanciaHaversine(c, puntB))
+			coordsA.push_back(c);
+		else
+			coordsB.push_back(c);
+	}
+
+	// creamos hijos
+	m_left = new BallTree();
+	m_right = new BallTree();
+
+	m_left->m_root = this;
+	m_right->m_root = this;
+
+	// recursion
+	m_left->construirArbre(coordsA);
+	m_right->construirArbre(coordsB);
 }
 
+
+// recorrido inorden
 void BallTree::inOrdre(vector<list<Coordinate>>& out)
 {
-    if (m_coordenades.empty()) return; //Si esta buit no cal fer-lo
-    //Com es inOrdre primer es fara el fill esquerra, despres es fara la llista y per ultim el fill dret
-    if (m_left != nullptr) 
-        m_left->inOrdre(out); 
+	if (m_coordenades.empty())
+		return;
 
-	list<Coordinate> Cordenades(m_coordenades.begin(), m_coordenades.end()); // Fem una lista amb totes les cordenades actuals
-	out.push_back(Cordenades); // afegim la lista de coordenadas al vector de llistes
+	if (m_left != nullptr)
+		m_left->inOrdre(out);
 
-    if (m_right != nullptr)
-        m_right->inOrdre(out);
+	out.emplace_back(m_coordenades.begin(), m_coordenades.end());
+
+	if (m_right != nullptr)
+		m_right->inOrdre(out);
 }
 
+// RECORRIDOS
+
+// recorrido preorden
 void BallTree::preOrdre(vector<list<Coordinate>>& out)
 {
-    if (m_coordenades.empty()) return; //Si esta buit no cal fer-lo
-    //Como es inOrdre primer es fara la llista, despres es fara el fill esquerra y per ultim el fill dret
-    list<Coordinate> Cordenades(m_coordenades.begin(), m_coordenades.end()); 
-    out.push_back(Cordenades);
+	if (m_coordenades.empty())
+		return;
 
-    if (m_left != nullptr)
-        m_left->preOrdre(out);
+	out.emplace_back(m_coordenades.begin(), m_coordenades.end());
 
-    if (m_right != nullptr)
-        m_right->preOrdre(out);
+	if (m_left != nullptr)
+		m_left->preOrdre(out);
+	if (m_right != nullptr)
+		m_right->preOrdre(out);
 }
 
+
+// recorrido postorden
 void BallTree::postOrdre(vector<list<Coordinate>>& out)
 {
-    if (m_coordenades.empty()) return; //Si esta buit no cal fer-lo
-    //Com es inOrdre primer es fara el fill dret, despres es fara el fill esquerra y per ultim la llist
-    if (m_left != nullptr)
-        m_left->postOrdre(out);
+	if (m_coordenades.empty())
+		return;
 
-    if (m_right != nullptr)
-        m_right->postOrdre(out);
+	if (m_left != nullptr)
+		m_left->postOrdre(out);
+	if (m_right != nullptr)
+		m_right->postOrdre(out);
 
-    list<Coordinate> Cordenades(m_coordenades.begin(), m_coordenades.end()); 
-    out.push_back(Cordenades);
+	out.emplace_back(m_coordenades.begin(), m_coordenades.end());
 }
 
+
+// destructor: liberamos memoria recursivamente
 BallTree::~BallTree()
 {
-    // Liberar memoria dinámica de los hijos
-    if (m_left != nullptr)
-    {
-        delete m_left;
-        m_left = nullptr;
-    }
-    if (m_right != nullptr)
-    {
-        delete m_right;
-        m_right = nullptr;
-    }
+	if (m_left != nullptr) {
+		delete m_left;
+		m_left = nullptr;
+	}
+
+	if (m_right != nullptr) {
+		delete m_right;
+		m_right = nullptr;
+	}
+	
+	//Hay que vaciar que lo dijeron en clase
 }
+
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

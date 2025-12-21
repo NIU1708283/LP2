@@ -1,169 +1,224 @@
-#include "pch.h"
+#include "pch.h" // Caronte
 #include "MapaSolucio.h"
 #include "PuntDeInteresBotigaSolucio.h"
 #include "PuntDeInteresRestaurantSolucio.h"
 #include "CamiSolucio.h"
-#include "GrafSolucio.h" // Incloure aquí
-#include "BallTree.h"    // Incloure aquí
+#include "GrafSolucio.h"
+#include "BallTree.h"
 #include <stack>
 
 using namespace std;
 
+
 MapaSolucio::~MapaSolucio() {
-    checkBuit();
+	checkBuit();
 }
 
-void MapaSolucio::getPdis(std::vector<PuntDeInteresBase *> & pdis) {
-    pdis = m_pdis;
+
+// devuelve los puntos de interes
+void MapaSolucio::getPdis(vector<PuntDeInteresBase*>& pdis) {
+	pdis = m_pdis;
 }
 
-void MapaSolucio::getCamins(std::vector<CamiBase *> & camins) {
-    camins = m_camins;
+
+// devuelve los caminos
+void MapaSolucio::getCamins(vector<CamiBase*>& camins) {
+	camins = m_camins;
 }
 
+
+// limpia estructuras internas
 void MapaSolucio::checkBuit() {
-    if (!m_camins.empty()) {
-        for(auto c : m_camins) delete c;
-        m_camins.clear();
-    }
-    if (!m_pdis.empty()) {
-        for(auto p : m_pdis) delete p;
-        m_pdis.clear();
-    }
+	if (!m_camins.empty()) {
+		for (auto c : m_camins)
+			delete c;
+		m_camins.clear();
+	}
+
+	if (!m_pdis.empty()) {
+		for (auto p : m_pdis)
+			delete p;
+		m_pdis.clear();
+	}
 }
 
-void MapaSolucio::parsejaXmlElements(std::vector<XmlElement> &xmlElements) {
-    checkBuit();
-    // Només parsejem PDI i Camins. NO construim graf ni arbre aquí.
-    
-    vector<pair<string, Coordinate>> llista_referencies;
-    pair<string, Coordinate> referencia;
-    double latitud, longitud;
-    int i, val_switch;
-    bool triggerHighway, triggerTrobat;
-    Coordinate c;
-    string loc;
 
-    for (auto actual = xmlElements.begin(); actual != xmlElements.end(); actual++) {
-        latitud = 0; longitud = 0;
-        if ((*actual).id_element == "node") {
-            val_switch = 0;
-            for (i = 0; i < (*actual).fills.size(); i++) {
-                if ((*actual).fills[i].first == "tag") {
-                    pair<string, string> tagextret = Util::kvDeTag((*actual).fills[i].second);
-                    if ((tagextret.second == "restaurant") || (tagextret.second == "cafe")) val_switch = 1;
-                    else if (tagextret.first == "shop") val_switch = 2;
-                }
-            }
-            switch (val_switch) {
-            case 1: { 
-                string nom, cuisine, rodes;
-                for (i = 0; i < (*actual).fills.size(); i++) {
-                    if ((*actual).fills[i].first == "tag") {
-                        pair<string, string> tagextret = Util::kvDeTag((*actual).fills[i].second);
-                        if (tagextret.first == "name") nom = tagextret.second;
-                        else if (tagextret.first == "cuisine") cuisine = tagextret.second;
-                        else if (tagextret.first == "wheelchair") rodes = tagextret.second;
-                    }
-                }
-                for (i = 0; i < (*actual).atributs.size(); i++) {
-                    if ((*actual).atributs[i].first == "lat") { latitud = stod((*actual).atributs[i].second); c.lat = latitud; }
-                    if ((*actual).atributs[i].first == "lon") { longitud = stod((*actual).atributs[i].second); c.lon = longitud; }
-                }
-                if (nom != "") m_pdis.push_back(new PuntDeInteresRestaurantSolucio(c, nom, cuisine, rodes));
-                break;
-            }
-            case 2: { 
-                string nom, rodes, hores, tag;
-                for (i = 0; i < (*actual).fills.size(); i++) {
-                    if ((*actual).fills[i].first == "tag") {
-                        pair<string, string> tagextret = Util::kvDeTag((*actual).fills[i].second);
-                        if (tagextret.first == "name") nom = tagextret.second;
-                        else if (tagextret.first == "wheelchair") rodes = tagextret.second;
-                        else if (tagextret.first == "opening_hours") hores = tagextret.second;
-                        else if (tagextret.first == "shop") tag = tagextret.second;
-                    }
-                }
-                for (i = 0; i < (*actual).atributs.size(); i++) {
-                    if ((*actual).atributs[i].first == "lat") { latitud = stod((*actual).atributs[i].second); c.lat = latitud; }
-                    if ((*actual).atributs[i].first == "lon") { longitud = stod((*actual).atributs[i].second); c.lon = longitud; }
-                }
-                if (nom != "") m_pdis.push_back(new PuntDeInteresBotigaSolucio(c, nom, tag, hores, rodes));
-                break;
-            }
-            default: 
-                for (i = 0; i < (*actual).atributs.size(); i++) {
-                    if ((*actual).atributs[i].first == "id") loc = (*actual).atributs[i].second;
-                    if ((*actual).atributs[i].first == "lat") { latitud = stod((*actual).atributs[i].second); c.lat = latitud; }
-                    if ((*actual).atributs[i].first == "lon") { longitud = stod((*actual).atributs[i].second); c.lon = longitud; }
-                }
-                triggerTrobat = false;
-                for (auto recorregut = llista_referencies.begin(); recorregut != llista_referencies.end(); recorregut++) {
-                    if ((*recorregut).first == loc) { triggerTrobat = true; break; }
-                }
-                if (!triggerTrobat) {
-                    referencia.first = loc; referencia.second = c;
-                    llista_referencies.push_back(referencia);
-                }
-                break;
-            }
-        }
-        if ((*actual).id_element == "way") {
-            triggerHighway = false;
-            vector<Coordinate> retornat;
-            for (i = 0; i < (*actual).fills.size(); i++) {
-                if ((*actual).fills[i].first == "nd") {
-                    for (auto recorregut = llista_referencies.begin(); recorregut != llista_referencies.end(); recorregut++) {
-                        if (((*recorregut).first) == (*actual).fills[i].second[0].second) {
-                            retornat.push_back((*recorregut).second);
-                        }
-                    }
-                }
-                if ((*actual).fills[i].first == "tag") {
-                    pair<string, string> tagextret = Util::kvDeTag((*actual).fills[i].second);
-                    if (tagextret.first == "highway") triggerHighway = true;
-                }
-            }
-            if (triggerHighway) {
-                m_camins.push_back(new CamiSolucio(retornat, triggerHighway));
-            }
-        }
-    }
+// parsea el xml y crea pdis y camins
+void MapaSolucio::parsejaXmlElements(vector<XmlElement>& xmlElements) {
+	checkBuit();
+
+	vector<pair<string, Coordinate>> llista_referencies;
+	pair<string, Coordinate> referencia;
+
+	double latitud, longitud;
+	int i, tipus_node;
+	bool esHighway, trobat;
+	Coordinate c;
+	string id_ref;
+
+	for (auto actual = xmlElements.begin(); actual != xmlElements.end(); actual++) {
+		latitud = 0;
+		longitud = 0;
+
+		// tractem nodes
+		if (actual->id_element == "node") {
+			tipus_node = 0;
+
+			// detectem tipus
+			for (i = 0; i < actual->fills.size(); i++) {
+				if (actual->fills[i].first == "tag") {
+					auto tag = Util::kvDeTag(actual->fills[i].second);
+					if (tag.second == "restaurant" || tag.second == "cafe")
+						tipus_node = 1;
+					else if (tag.first == "shop")
+						tipus_node = 2;
+				}
+			}
+
+			switch (tipus_node) {
+
+			// restaurant
+			case 1: {
+				string nom, cuisine, rodes;
+
+				for (i = 0; i < actual->fills.size(); i++) {
+					if (actual->fills[i].first == "tag") {
+						auto tag = Util::kvDeTag(actual->fills[i].second);
+						if (tag.first == "name") nom = tag.second;
+						else if (tag.first == "cuisine") cuisine = tag.second;
+						else if (tag.first == "wheelchair") rodes = tag.second;
+					}
+				}
+
+				for (i = 0; i < actual->atributs.size(); i++) {
+					if (actual->atributs[i].first == "lat") c.lat = stod(actual->atributs[i].second);
+					if (actual->atributs[i].first == "lon") c.lon = stod(actual->atributs[i].second);
+				}
+
+				if (!nom.empty())
+					m_pdis.push_back(new PuntDeInteresRestaurantSolucio(c, nom, cuisine, rodes));
+
+				break;
+			}
+
+			// botiga
+			case 2: {
+				string nom, rodes, hores, tag_shop;
+
+				for (i = 0; i < actual->fills.size(); i++) {
+					if (actual->fills[i].first == "tag") {
+						auto tag = Util::kvDeTag(actual->fills[i].second);
+						if (tag.first == "name") nom = tag.second;
+						else if (tag.first == "wheelchair") rodes = tag.second;
+						else if (tag.first == "opening_hours") hores = tag.second;
+						else if (tag.first == "shop") tag_shop = tag.second;
+					}
+				}
+
+				for (i = 0; i < actual->atributs.size(); i++) {
+					if (actual->atributs[i].first == "lat") c.lat = stod(actual->atributs[i].second);
+					if (actual->atributs[i].first == "lon") c.lon = stod(actual->atributs[i].second);
+				}
+
+				if (!nom.empty())
+					m_pdis.push_back(new PuntDeInteresBotigaSolucio(c, nom, tag_shop, hores, rodes));
+
+				break;
+			}
+
+			// node normal (referencia)
+			default:
+				for (i = 0; i < actual->atributs.size(); i++) {
+					if (actual->atributs[i].first == "id") id_ref = actual->atributs[i].second;
+					if (actual->atributs[i].first == "lat") c.lat = stod(actual->atributs[i].second);
+					if (actual->atributs[i].first == "lon") c.lon = stod(actual->atributs[i].second);
+				}
+
+				trobat = false;
+				for (auto& r : llista_referencies) {
+					if (r.first == id_ref) {
+						trobat = true;
+						break;
+					}
+				}
+
+				if (!trobat) {
+					referencia.first = id_ref;
+					referencia.second = c;
+					llista_referencies.push_back(referencia);
+				}
+				break;
+			}
+		}
+
+		// tractem ways
+		if (actual->id_element == "way") {
+			esHighway = false;
+			vector<Coordinate> cami;
+
+			for (i = 0; i < actual->fills.size(); i++) {
+				if (actual->fills[i].first == "nd") {
+					for (auto& ref : llista_referencies) {
+						if (ref.first == actual->fills[i].second[0].second)
+							cami.push_back(ref.second);
+					}
+				}
+
+				if (actual->fills[i].first == "tag") {
+					auto tag = Util::kvDeTag(actual->fills[i].second);
+					if (tag.first == "highway")
+						esHighway = true;
+				}
+			}
+
+			if (esHighway)
+				m_camins.push_back(new CamiSolucio(cami, true));
+		}
+	}
+
+	// dev //
 }
 
-// Lógica del Grupo 431: Construir estructuras locales
-CamiBase * MapaSolucio::buscaCamiMesCurt(PuntDeInteresBase *desde, PuntDeInteresBase *a) {
-    if (!desde || !a) return nullptr;
 
-    // 1. Construir Graf i BallTree localment (Stack allocated)
-    GrafSolucio graf(this); 
-    
-    BallTree ball; 
-    ball.construirArbre(graf.getCoordenades()); 
+// busca el camino mas corto entre dos puntos
+CamiBase* MapaSolucio::buscaCamiMesCurt(PuntDeInteresBase* desde, PuntDeInteresBase* a) {
+	if (!desde || !a)
+		return nullptr;
 
-    // 2. Cercar nodes més propers
-    Coordinate inici, final;
-    Coordinate Q_dummy = {0.0, 0.0};
-    
-    // Usem la teva implementació de nodeMesProper, passant &ball com a root
-    ball.nodeMesProper(desde->getCoord(), inici, &ball);
-    
-    // Reiniciem Q per la segona cerca (encara que sigui per valor, per claredat)
-    Q_dummy = {0.0, 0.0};
-    ball.nodeMesProper(a->getCoord(), final, &ball);
+	// construimos estructuras auxiliares en local
+	GrafSolucio graf(this);
 
-    // 3. Calcular camí Dijkstra
-    vector<Coordinate> qCami;
-    stack<Coordinate> pilaQCami;
-    
-    graf.camiMesCurt(inici, final, pilaQCami);
+	BallTree ball;
+	ball.construirArbre(graf.getCoordenades());
 
-    if (pilaQCami.empty()) return nullptr;
+	// buscamos nodos mas cercanos
+	Coordinate inici{ 0.0, 0.0 };
+	Coordinate final{ 0.0, 0.0 };
 
-    while (!pilaQCami.empty()) {
-        qCami.push_back(pilaQCami.top());
-        pilaQCami.pop();
-    }
+	ball.nodeMesProper(desde->getCoord(), inici, &ball);
+	ball.nodeMesProper(a->getCoord(), final, &ball);
 
-    return new CamiSolucio(qCami, false);
+	// calculamos camino
+	vector<Coordinate> coordsCami;
+	stack<Coordinate> pila;
+
+	graf.camiMesCurt(inici, final, pila);
+
+	if (pila.empty())
+		return nullptr;
+
+	while (!pila.empty()) {
+		coordsCami.push_back(pila.top());
+		pila.pop();
+	}
+
+	return new CamiSolucio(coordsCami, false);
 }
+
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

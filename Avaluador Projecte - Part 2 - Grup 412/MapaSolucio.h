@@ -1,28 +1,46 @@
 #pragma once
-#include "pch.h"
+
+#include "pch.h" // Caronte
 #include "MapaBase.h"
 #include "Util.h"
 #include <vector>
 
-// Forward declarations
-class GrafSolucio;
-class BallTree;
+using namespace std;
 
+
+// implementacion concreta del mapa
 class MapaSolucio : public MapaBase {
 
 public:
-    MapaSolucio() {} // Constructor buit
-    ~MapaSolucio();  // Destructor net
+	MapaSolucio() {}   // constructor vacio
+	~MapaSolucio();    // destructor limpio
 
-    void getPdis(std::vector<PuntDeInteresBase *> & pdis);
-    void getCamins(std::vector<CamiBase *> & camins);
-    void parsejaXmlElements(std::vector<XmlElement> &xmlElements);
-    CamiBase * buscaCamiMesCurt(PuntDeInteresBase *desde, PuntDeInteresBase *a);
+	// devuelve los pdis cargados
+	void getPdis(vector<PuntDeInteresBase*>& pdis);
+
+	// devuelve los caminos cargados
+	void getCamins(vector<CamiBase*>& camins);
+
+	// parsea el xml y monta toda la estructura
+	void parsejaXmlElements(vector<XmlElement>& xmlElements);
+
+	// new part 2: camino mas corto entre dos pdis
+	CamiBase* buscaCamiMesCurt(PuntDeInteresBase* desde, PuntDeInteresBase* a);
+
+	// esta esta bien
 
 private:
-    std::vector<PuntDeInteresBase *> m_pdis;
-    std::vector<CamiBase *> m_camins;
+	vector<PuntDeInteresBase*> m_pdis;  // puntos de interes
+	vector<CamiBase*> m_camins;         // caminos del mapa
 
-    // ELIMINATS m_graf i m_ballTree per evitar segfaults
-    void checkBuit();
+	// helpers internos
+	void checkBuit(); // limpia vectores antes de recargar
 };
+
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

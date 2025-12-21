@@ -1,38 +1,45 @@
-//#include "pch.h"
 #include "PuntDeInteresBotigaSolucio.h"
 #include <string>
+#include "pch.h" // Caronte
 
 using namespace std;
 
-// Retorna el color del punt d’interès segons el tipus de botiga
+
+// calcula el color segun el tipo de botiga
 unsigned int PuntDeInteresBotigaSolucio::getColor()
 {
-    // Casos principals segons el tag de la botiga
-    if (m_tagBotiga == "supermarket")
-        return 0xDFFF00;   // Verd groguenc per supermercat
+	// supermarket
+	if (m_tagBotiga == "supermarket")
+		return 0xDFFF00;
 
-    if (m_tagBotiga == "tobacco")
-        return 0xFF7F50;   // Taronja suau per estanc
+	// tobacco
+	if (m_tagBotiga == "tobacco")
+		return 0xFF7F50;
+		
+		//dev1
 
-    if (m_tagBotiga == "bakery") {
-        // Es considera oberta si l’horari conté “06:00” i “22:00”
-        const bool has06 = (m_openingHours.find("06:00") != string::npos);
-        const bool has22 = (m_openingHours.find("22:00") != string::npos);
-        const bool obert = has06 && has22;
+	// bakery (casos especiales)
+	if (m_tagBotiga == "bakery") {
+		bool obert = (m_openingHours.find("06:00") != string::npos &&
+					  m_openingHours.find("22:00") != string::npos);
 
-        const bool accessible = (m_wheelchair == "yes");
+		bool accessible = (m_wheelchair == "yes"); //dev2
 
-        // Casos de fleca (segons els tests):
-        // - Oberta i accessible → verd clar (0x4CBB17)
-        // - La resta → salmó (0xFA8072)
-        if (accessible && obert)  return 0x4CBB17;
-        return 0xFA8072;
-    }
+		if (accessible && obert)
+			return 0x4CBB17;
+			//dev3
 
-    // Resta de botigues: color per defecte segons test (groc)
-    return 0xFFEA00;
+		return 0xFA8072;
+	}
+
+	// resto de tiendas
+	return 0xFFEA00;
 }
 
-// ---------------------------------------------------------------------------
-// Fitxer implementat per Arnau Baeza (NIU 1708086) i Felipe Tenorio da Silva
-// ---------------------------------------------------------------------------
+
+/* --------------------------------------------------
+ *  lp project - mapa / camins / pdis
+ *  arnau baeza muñoz        niu: 1708086
+ *  felipe tenorio da silva  niu: 1708283
+ * --------------------------------------------------
+ */

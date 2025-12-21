@@ -1,5 +1,7 @@
-#include "pch.h"
+#include "pch.h" // Caronte
 #include "Util.h"
+
+// Aquí tampoco tocar mucho
 
 double Util::m_PI = 3.141592653589793238462643383279502884L;
 double Util::m_RadiTerraX2 = static_cast<double>(2 * 6371);
@@ -87,3 +89,5 @@ Coordinate Util::calcularPuntCentral(std::vector<Coordinate>& punts) {
        
     return Coordinate{ lat, lon };
 }
+
+// Aixó no ho toquem molt que la liem
