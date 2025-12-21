@@ -1,19 +1,18 @@
 #pragma once
 #include "pch.h"
 #include "MapaBase.h"
-#include "GrafSolucio.h"
-#include "BallTree.h"
 #include "Util.h"
+#include <vector>
+
+// Forward declarations
+class GrafSolucio;
+class BallTree;
 
 class MapaSolucio : public MapaBase {
 
 public:
-    MapaSolucio() {
-        m_graf = nullptr;
-        m_ballTree = nullptr;
-    }
-    
-    ~MapaSolucio();
+    MapaSolucio() {} // Constructor buit
+    ~MapaSolucio();  // Destructor net
 
     void getPdis(std::vector<PuntDeInteresBase *> & pdis);
     void getCamins(std::vector<CamiBase *> & camins);
@@ -23,8 +22,7 @@ public:
 private:
     std::vector<PuntDeInteresBase *> m_pdis;
     std::vector<CamiBase *> m_camins;
-    GrafSolucio* m_graf;
-    BallTree* m_ballTree;
 
+    // ELIMINATS m_graf i m_ballTree per evitar segfaults
     void checkBuit();
 };

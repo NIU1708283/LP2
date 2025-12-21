@@ -1,28 +1,36 @@
 #pragma once
-#include "pch.h"
-#include "Common.h"
 #include "Util.h"
-#include <map>
+#include "MapaBase.h" // Canviat de MapaSolucio.h a MapaBase.h per evitar dependencia circular
+#include <stack>
 #include <vector>
-#include <queue>
-#include <limits>
+#include <algorithm>
+#include <cfloat>
 
-// Comparador estricte necessari per a que std::map funcioni bé amb Coordinate
-struct CoordinateCompare {
-    bool operator() (const Coordinate& lhs, const Coordinate& rhs) const {
-        if (lhs.lat != rhs.lat) return lhs.lat < rhs.lat;
-        return lhs.lon < rhs.lon;
-    }
-};
+using namespace std;
 
-class GrafSolucio {
+class GrafSolucio
+{
 public:
-    GrafSolucio();
-    ~GrafSolucio();
+    GrafSolucio() { m_nNodes = 0; m_nArestes = 0; }
+    GrafSolucio(MapaBase* map); // Constructor clau que construeix el graf des del mapa
+    
+    ~GrafSolucio(); 
 
-    void afegirAresta(const Coordinate& n1, const Coordinate& n2);
-    std::vector<Coordinate> dijkstra(const Coordinate& origen, const Coordinate& desti);
+    void setAresta(int posN1, int posN2, float pes);
+    void setNode(const Coordinate& n);
+
+    vector<Coordinate> getCoordenades() const { return m_nodes; }
+
+    void camiMesCurt(const Coordinate& n1, const Coordinate& n2, stack<Coordinate>& cami);
 
 private:
-    std::map<Coordinate, std::vector<std::pair<Coordinate, double>>, CoordinateCompare> m_adjList;
+    vector<Coordinate> m_nodes;
+    size_t m_nNodes;
+    size_t m_nArestes;
+    vector<vector<float>> m_matriuAdj;
+    
+    bool estaEnVector(const vector<Coordinate>& nodes, const Coordinate& c);
+    void crearMatriu(const vector<vector<float>>& parelles, const vector<float>& pesos);
+    size_t minDist(vector<float>& dist, vector<bool>& visitat);
+    void dijkstra(size_t n1, size_t n2, vector<float>& dist, vector<size_t>& ant);
 };
