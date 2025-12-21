@@ -2,8 +2,22 @@
 #include "MapaSolucio.h"
 #include "PuntDeInteresBotigaSolucio.h"
 #include "PuntDeInteresRestaurantSolucio.h"
+#include "CamiSolucio.h"
 
 using namespace std;
+
+// NOU: Destructor que neteja tot
+MapaSolucio::~MapaSolucio() {
+    checkBuit();
+    if (m_graf != nullptr) {
+        delete m_graf;
+        m_graf = nullptr;
+    }
+    if (m_ballTree != nullptr) {
+        delete m_ballTree;
+        m_ballTree = nullptr;
+    }
+}
 
 void MapaSolucio::getPdis(std::vector<PuntDeInteresBase *> & pdis) {
     pdis = m_pdis;
@@ -16,9 +30,15 @@ void MapaSolucio::getCamins(std::vector<CamiBase *> & camins) {
 void MapaSolucio::checkBuit()
 {
     if (!m_camins.empty()) {
+        for (auto c : m_camins) {
+            delete c;
+        }
         m_camins.clear();
     }
     if (!m_pdis.empty()) {
+        for (auto p : m_pdis) {
+            delete p;
+        }
         m_pdis.clear();
     }
 }
